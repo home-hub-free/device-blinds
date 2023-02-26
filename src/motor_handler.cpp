@@ -5,36 +5,45 @@
 bool default_clockwise = true;
 // Direction actually depends on the motor coils but for simplicity
 // we use clockwise/anti-clockwise wording
+
+/**
+ * Make sure to swap HIGH and LOW depending on your coil
+ * configuration if you notice that clockwise is not your
+ * default spin OR swap the motor coil connections from your
+ * motor driver
+*/
 int direction = default_clockwise ? HIGH : LOW;
 
 // This values need to be set when the board is plugged in
 int motor_position = 0;
 int motor_limit = 24000;
 
-int motor_start_speed = 789;
-int motor_end_speed = 489;
+int motor_start_speed = 490;
+int motor_end_speed = 490;
 int motor_speed = motor_start_speed;
-// Value updated by the homekit accessory to execute motor stepping
-// asynchronusly
-long global_steps = 0;
-
-// Executable steps per loop cycle, this is to keep the loop alive and avoid the ESP8266 watchdog to timeout and restart the board
-int steps_by_loop = 1500;
 
 // D5
-const int enablePin = 14;
+const int enablePin = D5;
 // D6
-const int stepPin = 12;
+const int stepPin = D6;
 // D7
-const int dirPin = 13;
+const int dirPin = D7;
+
+const int button_1 = D8;
+const int button_2 = D0;
 
 /*
 Initializes motor pins, states and a quick full rotation to test
 */
 void init_motor() {
+
+  pinMode(button_1, INPUT);
+  pinMode(button_2, INPUT);
+
   pinMode(enablePin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
+
   // Initial state of motor is clockwise (HIGH state)
   digitalWrite(dirPin, direction);
   // Motor is disabled unless it needs to execute steps
@@ -69,38 +78,8 @@ bool step_times(long steps) {
   Serial.print("Motor position: ");
   Serial.println(motor_position);
 
-  digitalWrite(enablePin, HIGH);
+  digitalWrite(enablePin, LOW);
   return reachedLimit;
-}
-
-int stepAccCount = 0;
-bool accelerate = true;
-bool decelerate = false;
-void adjustAcceleration() {
-  if (accelerate && stepAccCount == 2) {
-    if (motor_speed > motor_end_speed) {
-      motor_speed = motor_speed - 1;
-    } else if (motor_speed == motor_end_speed && global_steps <= 600) {
-      accelerate = false;
-      decelerate = true;
-    }
-    stepAccCount = 0;
-  }
-
-  if (decelerate && stepAccCount == 2) {
-    if (motor_speed < motor_start_speed) {
-      motor_speed = motor_speed + 1;
-    }
-    stepAccCount = 0;
-  }
-
-  stepAccCount = stepAccCount + 1;
-  if (global_steps == 0) {
-    accelerate = true;
-    decelerate = false;
-    motor_speed = motor_start_speed;
-    stepAccCount = 0;
-  }
 }
 
 void single_step() {
@@ -117,12 +96,6 @@ void single_step() {
     motor_position = motor_position + (-1 * multiplier);
   }
 
-  // If async motor steping was called we update the global steps value
-  if (global_steps > 0) {
-    global_steps--;
-  }
-
-  adjustAcceleration();
   yield();
 }
 
@@ -158,19 +131,12 @@ bool check_stop() {
  * Infinite loop over stepping a full rotation just to test the motor
  * */
 void test_motor() {
-  motor_speed = 550;
-  while (motor_speed > 300) {
-    Serial.print("Speed: ");
-    Serial.println(motor_speed);
-    // printf("Speed: " + String(motor_speed));
-    motor_speed = motor_speed - 5;
-    step_times(3600);
-    set_direction(false);
-    // delay(2000);
-    step_times(3600);
-    set_direction(true);
-    // delay(2000);
-  }
+  step_times(3600);
+  set_direction(false);
+  delay(2000);
+  step_times(3600);
+  set_direction(true);
+  delay(2000);
 }
 
 /**
@@ -195,34 +161,30 @@ void move_to_position_sync(int percentage) {
   }
 }
 
-/**
- * ASYNC (Keeps the ESP8266 loop alive)
- * */
-void move_to_position_async(int percentage) {
-  long steps = parse_percent_to_steps(percentage);
-  if (steps > 0) {
-    global_steps = steps;
-  }
+void switch_direction() {
+  default_clockwise = !default_clockwise;
 }
 
-// long get_global_steps()
-// {
-//   return global_steps;
-// }
+void home_position() {
+  motor_position = 0;
+}
 
-// void set_global_steps(long val)
-// {
-//   global_steps = val;
-// }
+void set_limit() {
+  motor_limit = motor_position;
+}
 
-// We step the motor inside the loop to avoid cutting off the rest of the
-// necessary processes in the loop
-void motor_handler_loop() {
-  if (global_steps > 0) {
-    if (global_steps > steps_by_loop) {
-      step_times(steps_by_loop);
-    } else {
-      step_times(global_steps);
+void motor_loop_handler() {
+  int button_1_input = digitalRead(button_1);
+  int button_2_input = digitalRead(button_2);
+
+  if (button_1_input == LOW || button_2_input == LOW) {
+    if (button_1_input == HIGH) {
+      set_direction(true);
+      step_times(100);
+    }
+    if (button_2_input == HIGH) {
+      set_direction(false);
+      step_times(100);
     }
   }
 }

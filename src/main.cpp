@@ -10,17 +10,33 @@ ESP8266WebServer server(80);
 
 void handleRoot() {}
 
-void move() {
+void set() {
   String value = server.arg("value");
   if (value) {
     int position = value.toInt();
-    move_to_position_async(position);
+    move_to_position_sync(position);
   }
   server.send(200, "text/plain", "true");
 }
 
+void switch_motor_direction() {
+  switch_direction();
+  server.send(200);
+}
+
+void home_motor_position() {
+  home_position();
+  server.send(200);
+}
+
+void set_motor_limit() {
+  set_limit();
+  server.send(200);
+}
+
 void setup()
 {
+  init_motor();
 	Serial.begin(9600);
 	// Turn led on to indicate initialization process begins
 	pinMode(LED_BUILTIN, OUTPUT);
@@ -28,14 +44,14 @@ void setup()
 	delay(50);
 	wifi_connect(); // in wifi_info.h
 
-  server.on("/", handleRoot);
-  server.on("/set", move);
+  server.on("/", handleRoot); 
+  server.on("/set", set);
+  server.on("/switch-direction", switch_motor_direction);
+  server.on("/home-position", home_motor_position);
+  server.on("/set-limit", set_motor_limit);
   server.begin();
 
-  declareDevice();
-
-	// Initialize stepper motor pins and starting position/configuration
-	init_motor();
+  ping();
 
 	// Turn led off to indicate initialization process finish
 	digitalWrite(LED_BUILTIN, HIGH);
@@ -49,8 +65,8 @@ void loop() {
   unsigned long currentMills = millis();
   if (currentMills - previousMillis >= interval) {
     previousMillis = currentMills;
-    declareDevice();
+    ping();
   }
 
-  motor_handler_loop();
+  motor_loop_handler();
 }

@@ -11,14 +11,14 @@ void init_motor();
 bool step_times(long);
 void single_step();
 void set_direction(bool);
-bool check_emergency_stop();
+bool check_stop();
 void test_motor();
 void move_to_position_sync(int);
-void move_to_position_async(int);
-long get_global_steps();
-void set_global_steps(long);
-void motor_handler_loop();
-void speed_sound_test();
+void switch_direction();
+void home_position();
+void set_limit();
+void motor_loop_handler();
+
 #ifdef __cplusplus
 }
 #endif

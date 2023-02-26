@@ -31,10 +31,10 @@ void wifi_connect() {
 	Serial.printf("WiFi connected, IP: %s\n", WiFi.localIP().toString().c_str());
 }
 
-void declareDevice() {
-  http.begin(wifiClient, home_server + "add-device-ip");
+void ping() {
+  http.begin(wifiClient, home_server + "/device-declare");
   http.addHeader("Content-Type", "application/json");
-  int httpCode = http.POST("{ \"device\": \"" + String(id) + "\", \"type\": \"blinds\" }");
+  int httpCode = http.POST("{ \"id\": \"" + String(id) + "\", \"name\": \"blinds\" }");
   if (httpCode > 0) {
     String result = http.getString();
     Serial.print("Ping sent to server: ");
