@@ -37,6 +37,9 @@ Initializes motor pins, states and a quick full rotation to test
 */
 void init_motor() {
 
+  digitalWrite(button_1, LOW);
+  digitalWrite(button_2, LOW);
+
   pinMode(button_1, INPUT);
   pinMode(button_2, INPUT);
 
@@ -59,13 +62,13 @@ void init_motor() {
 }
 
 bool step_times(long steps) {
-  digitalWrite(enablePin, LOW);
   bool reachedLimit = false;
   for (long x = 0; x < steps; x++) {
     if (check_stop()) {
       reachedLimit = true;
       break;
     } else {
+      digitalWrite(enablePin, LOW);
       single_step();
     }
   }
@@ -78,7 +81,7 @@ bool step_times(long steps) {
   Serial.print("Motor position: ");
   Serial.println(motor_position);
 
-  digitalWrite(enablePin, LOW);
+  digitalWrite(enablePin, HIGH);
   return reachedLimit;
 }
 
@@ -180,11 +183,11 @@ void motor_loop_handler() {
   if (button_1_input == LOW || button_2_input == LOW) {
     if (button_1_input == HIGH) {
       set_direction(true);
-      step_times(100);
+      step_times(200);
     }
     if (button_2_input == HIGH) {
       set_direction(false);
-      step_times(100);
+      step_times(200);
     }
   }
 }
