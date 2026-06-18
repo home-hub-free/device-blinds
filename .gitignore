@@ -3,3 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+# Device credentials — never commit real creds
+src/secrets.h
+src/device_secrets.h
